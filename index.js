@@ -44,4 +44,10 @@ app.post("/api/login", async (req, res) => {
   res.json({ token });
 });
 
+// Add this inside index.js, before module.exports
+app.get("/api/hello", (req, res) => {
+  res.json({ message: "Hello from backend!" });
+});
+
+
 module.exports = app;
