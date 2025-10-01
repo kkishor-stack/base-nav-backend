@@ -15,6 +15,8 @@ async function connectToDatabase() {
 }
 
 export default async function handler(req, res) {
+  console.log('Backend: /api/register function was hit!'); // <-- Is it here?
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
