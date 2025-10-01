@@ -2,6 +2,7 @@
 
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 // Reusable connection instance
 let db;
@@ -41,12 +42,15 @@ export default async function handler(req, res) {
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Insert new user
-    await usersCollection.insertOne({
+    const result = await usersCollection.insertOne({
       email,
       password: hashedPassword,
     });
 
-    res.status(201).json({ message: 'User created successfully!' });
+    // Generate JWT token
+    const token = jwt.sign({ userId: result.insertedId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    res.status(201).json({ message: 'User created successfully!', token , user: { id: result.insertedId, email }});
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Internal Server Error' });
