@@ -25,5 +25,11 @@
   "bugs": {
     "url": "https://github.com/kkishor-stack/base-nav-backend/issues"
   },
-  "homepage": "https://github.com/kkishor-stack/base-nav-backend#readme"
+  "homepage": "https://github.com/kkishor-stack/base-nav-backend#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.6.1",
+    "typescript": "^5.9.3"
+  }
 }
