@@ -1,74 +1,52 @@
-// base-nav-backend/api/signup.js
-
-const { MongoClient } = require('mongodb');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-// Reusable connection instance
-let db;
-
-async function connectToDatabase() {
-  if (db) return db;
-
-  if (!process.env.MONGODB_URI) {
-    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-  }
-
-  const client = new MongoClient(process.env.MONGODB_URI);
-  await client.connect();
-  db = client.db(); // Use default database from connection string
-  return db;
-}
+import dbConnect from "../lib/dbConnect.js";
+import User from "../models/User.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {
-  console.log('Backend: /api/signup function was hit!'); // <-- Is it here?
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { email, password, username } = req.body;
+  const { username, email, password } = req.body;
 
-  if (!email || !password || password.length < 6) {
-    return res.status(400).json({ message: 'Invalid email or password (must be at least 6 characters).' });
-  }
-
-  if (!process.env.JWT_SECRET) {
-    throw new Error('Please define the JWT_SECRET environment variable inside .env.local');
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: "Username, email, and password are required" });
   }
 
   try {
-    console.log('Connecting to DB...');
-    const database = await connectToDatabase();
+    await dbConnect();
 
-    console.log('Checking existing user...');
-    const usersCollection = database.collection('users');
-
-    // Check if user already exists
-    const existingUser = await usersCollection.findOne({ email });
+    // Check if username OR email already exists
+    const existingUser = await User.findOne({
+      $or: [{ username }, { email }],
+    });
     if (existingUser) {
-      return res.status(409).json({ message: 'User already exists.' });
+      return res.status(400).json({ error: "Username or email already exists" });
     }
 
-    console.log('Hashing password...');
-    // Hash the password before storing
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    console.log('Inserting new user...');
-    // Insert new user
-    const result = await usersCollection.insertOne({
+    const newUser = await User.create({
+      username,
       email,
       password: hashedPassword,
     });
 
-    console.log('Generating JWT...');
     // Generate JWT token
-    const token = jwt.sign({ userId: result.insertedId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { id: newUser._id, username: newUser.username, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-    console.log('User registered successfully:', result.insertedId);
-    res.status(201).json({ message: 'User created successfully!', token, user: { id: result.insertedId, email } });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    res.status(201).json({
+      message: "Signup successful",
+      token,
+      user: { id: newUser._id, username: newUser.username, email: newUser.email },
+    });
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 }
