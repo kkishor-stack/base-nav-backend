@@ -1,7 +1,16 @@
 {
   "version": 2,
   "functions": {
-    "api/*.js": {
+    "api/hello.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/login.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/signup.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/connect.js": {
       "runtime": "nodejs18.x"
     }
   }
