@@ -1,39 +1,38 @@
 // base-nav-backend/api/login.js
 
-const { MongoClient } = require('mongodb');
+import dbConnect from "../lib/dbconnect";
+import User from "../models/Users";
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-let db;
+// let db;
 
-async function connectToDatabase() {
-    if (db) return db;
-    const client = new MongoClient(process.env.MONGODB_URI);
-    await client.connect();
-    db = client.db();
-    return db;
-}
+// async function connectToDatabase() {
+//     if (db) return db;
+//     const client = new MongoClient(process.env.MONGODB_URI);
+//     await client.connect();
+//     db = client.db();
+//     return db;
+// }
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!email || !password) {
+    if (!username || !password) {
         return res.status(400).json({ message: 'Email and password are required.' });
     }
 
     try {
-        const database = await connectToDatabase();
-        const usersCollection = database.collection('users');
+        await dbConnect();
+        // const usersCollection = database.collection('users');
 
-        // Find the user by email
-        const user = await usersCollection.findOne({ email });
-        if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials.' });
-        }
+        // Find the user by username
+        const user = await User.findOne({ username });
+        if (!user) return res.status(401).json({ message: 'Invalid username.' });
 
         // Compare the provided password with the stored hashed password
         const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -43,7 +42,7 @@ export default async function handler(req, res) {
 
         // Generate a JWT
         const token = jwt.sign(
-            { userId: user._id, email: user.email },
+            { id: user._id, username: user.username },
             process.env.JWT_SECRET,
             { expiresIn: '7d' } // Token expires in 7 days
         );
