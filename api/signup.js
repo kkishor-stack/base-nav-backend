@@ -1,5 +1,5 @@
-import dbConnect from "../lib/dbConnect.js";
-import User from "../models/User.js";
+import dbConnect from "../lib/dbconnect";
+import User from "../models/Users";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
