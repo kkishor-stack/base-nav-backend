@@ -79,6 +79,7 @@ export default async function handler(req, res) {
         const userId = req.user.id || req.user._id; // or req.user._id if using Mongo ObjectId
 
         const newHazard = await Hazard.create({
+            userId: userId,            
             reportedBy: userId, type, severity, description, images, expiresAt, location: { type: "Point", coordinates: [lngNum, latNum] },
         });
         return res.status(201).json(newHazard);
