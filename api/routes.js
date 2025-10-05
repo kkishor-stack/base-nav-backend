@@ -79,6 +79,8 @@
 //         return res.status(500).json({ error: "Internal Server Error" });
 //     }
 // }
+
+// api/routes.js
 import jwt from "jsonwebtoken";
 import dbConnect from "../lib/dbconnect";
 import Hazard from "../models/Hazard";

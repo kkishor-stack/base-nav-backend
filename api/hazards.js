@@ -1,3 +1,4 @@
+// api/hazards.js
 import dbConnect from "../lib/dbconnect";
 import Hazard from "../models/Hazard";
 import jwt from "jsonwebtoken";
@@ -75,8 +76,10 @@ export default async function handler(req, res) {
         if (isNaN(latNum) || isNaN(lngNum)) {
             return res.status(400).json({ error: "Invalid lat or lng" });
         }
+        const userId = req.user.id || req.user._id; // or req.user._id if using Mongo ObjectId
+
         const newHazard = await Hazard.create({
-            reportedBy: req.user.id, type, severity, description, images, expiresAt, location: { type: "Point", coordinates: [lngNum, latNum] },
+            reportedBy: userId, type, severity, description, images, expiresAt, location: { type: "Point", coordinates: [lngNum, latNum] },
         });
         return res.status(201).json(newHazard);
     }

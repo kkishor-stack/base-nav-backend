@@ -1,3 +1,4 @@
+// models/Hazard.js
 import mongoose from "mongoose";
 
 const HazardSchema = new mongoose.Schema({

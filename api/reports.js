@@ -1,3 +1,4 @@
+// api/reports.js
 import dbConnect from "../lib/dbconnect";
 import Report from "../models/Report";
 import jwt from "jsonwebtoken";
