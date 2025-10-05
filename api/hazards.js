@@ -22,9 +22,17 @@ export default async function handler(req, res) {
             return res.status(200).json(hazard);
         } else {
             const { lat, lng, radius = 50 } = req.query;
+            const latNum = parseFloat(lat);
+            const lngNum = parseFloat(lng);
+            const radiusNum = parseInt(radius);
+
+            if (isNaN(latNum) || isNaN(lngNum) || isNaN(radiusNum)) {
+                return res.status(400).json({ error: "Invalid lat, lng, or radius" });
+            }
+
             const hazards = await Hazard.find({
                 location: {
-                    $nearSphere: { $geometry: { type: "Point", coordinates: [parseFloat(lng), parseFloat(lat)] }, $maxDistance: parseInt(radius) },
+                    $nearSphere: { $geometry: { type: "Point", coordinates: [lngNum, latNum] }, $maxDistance: radiusNum },
                 },
             });
             return res.status(200).json(hazards);
@@ -36,12 +44,30 @@ export default async function handler(req, res) {
             // TODO: hazards along route
             return res.status(200).json([]);
         }
-        const newHazard = await Hazard.create({ ...req.body, reportedBy: req.user.id });
+        const { lat, lng, type, severity, description, images, expiresAt } = req.body;
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+
+        if (isNaN(latNum) || isNaN(lngNum)) {
+            return res.status(400).json({ error: "Invalid lat or lng" });
+        }
+        const newHazard = await Hazard.create({
+            reportedBy: req.user.id, type, severity, description, images, expiresAt, location: { type: "Point", coordinates: [lngNum, latNum] },
+        });
         return res.status(201).json(newHazard);
     }
 
     if (req.method === "PUT") {
         if (!id) return res.status(400).json({ error: "ID required" });
+        if (req.body.lat !== undefined && req.body.lng !== undefined) {
+            const latNum = parseFloat(req.body.lat);
+            const lngNum = parseFloat(req.body.lng);
+            if (!isNaN(latNum) && !isNaN(lngNum)) {
+                req.body.location = { type: "Point", coordinates: [lngNum, latNum] };
+            }
+            delete req.body.lat;
+            delete req.body.lng;
+        }
         const updated = await Hazard.findByIdAndUpdate(id, req.body, { new: true });
         return res.status(200).json(updated);
     }
