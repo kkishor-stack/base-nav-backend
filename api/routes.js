@@ -15,15 +15,23 @@ export default async function handler(req, res) {
     const { id, favorite } = req.query;
 
     if (req.method === "GET") {
+        const token = req.headers.authorization?.split(" ")[1];
+        if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+        try {
+            req.user = jwt.verify(token, process.env.JWT_SECRET);
+        } catch {
+            return res.status(401).json({ error: "Invalid token" });
+        }
         if (id) {
-            const route = await Route.findById(id);
+            const route = await Route.findById(id).populate("hazardsEncountered");
             if (!route) return res.status(404).json({ error: "Not found" });
             return res.status(200).json(route);
         } else {
             const { recent, fav } = req.query;
             const filter = { userId: req.user?.id };
             if (fav === "true") filter.isFavorite = true;
-            const routes = await Route.find(filter).sort({ completedAt: -1 }).limit(recent ? 3 : 100);
+            const routes = await Route.find(filter).populate("hazardsEncountered").sort({ completedAt: -1 }).limit(recent ? 3 : 100);
             return res.status(200).json(routes);
         }
     }
