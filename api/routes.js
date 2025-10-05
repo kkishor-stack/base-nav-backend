@@ -79,9 +79,10 @@
 //         return res.status(500).json({ error: "Internal Server Error" });
 //     }
 // }
-import dbConnect from "../lib/dbconnect";
-import Route from "../models/Route";
 import jwt from "jsonwebtoken";
+import dbConnect from "../lib/dbconnect";
+import Hazard from "../models/Hazard";
+import Route from "../models/Route";
 
 export default async function handler(req, res) {
   try {
@@ -129,6 +130,7 @@ export default async function handler(req, res) {
           .populate("hazardsEncountered")
           .sort({ completedAt: -1 })
           .limit(recent === "true" ? 3 : 100);
+        console.log("Routes found:", routes.length);
 
         return res.status(200).json(routes);
       }
