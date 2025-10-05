@@ -1,19 +1,9 @@
 // base-nav-backend/api/login.js
 
-import dbConnect from "../lib/dbconnect";
-import User from "../models/Users";
+import dbConnect from "../../lib/dbconnect";
+import User from "../../models/User";
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
-// let db;
-
-// async function connectToDatabase() {
-//     if (db) return db;
-//     const client = new MongoClient(process.env.MONGODB_URI);
-//     await client.connect();
-//     db = client.db();
-//     return db;
-// }
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
