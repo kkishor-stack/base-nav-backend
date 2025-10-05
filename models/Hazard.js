@@ -1,20 +1,26 @@
 import mongoose from "mongoose";
 
 const HazardSchema = new mongoose.Schema({
-  location: {
-    type: { type: String, enum: ["Point"], required: true },
-    coordinates: { type: [Number], required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  type: {
+    type: String,
+    required: true,
+    enum: ["pothole", "construction", "accident", "road_closed", "flooding", "other"]
   },
-  type: String,
-  severity: String,
-  reportedBy: String,
-  reportedAt: { type: Date, default: Date.now },
-  verifiedCount: { type: Number, default: 0 },
-  active: { type: Boolean, default: true },
+  location: {
+    lat: { type: Number, required: true },
+    lng: { type: Number, required: true },
+    address: String
+  },
+  severity: {
+    type: String,
+    enum: ["low", "medium", "high"],
+    default: "medium"
+  },
   description: String,
-  images: [String],
-  expiresAt: Date
-});
+  reportedAt: { type: Date, default: Date.now },
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
 
 HazardSchema.index({ location: "2dsphere" });
 
