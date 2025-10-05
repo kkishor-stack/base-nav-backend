@@ -26,15 +26,26 @@ export default async function handler(req, res) {
             const lngNum = parseFloat(lng);
             const radiusNum = parseInt(radius);
 
-            if (isNaN(latNum) || isNaN(lngNum) || isNaN(radiusNum)) {
-                return res.status(400).json({ error: "Invalid lat, lng, or radius" });
-            }
-
-            const hazards = await Hazard.find({
+            if (isNaN(latNum) || isNaN(lngNum) || isNaN(radiusNum)) return res.status(400).json({ error: "Invalid lat, lng, or radius" });
+            
+            const query = {
                 location: {
                     $nearSphere: { $geometry: { type: "Point", coordinates: [lngNum, latNum] }, $maxDistance: radiusNum },
                 },
-            });
+            };
+            const token = req.headers.authorization?.split(" ")[1];
+            if (token) {
+                try {
+                    const user = jwt.verify(token, process.env.JWT_SECRET);
+                    if (req.query.mine === "true") {
+                        query.reportedBy = user.id;
+                    }
+                } catch {
+                    /* ignore invalid token for GET */
+                }
+            }
+
+            const hazards = await Hazard.find(query);
             return res.status(200).json(hazards);
         }
     }
