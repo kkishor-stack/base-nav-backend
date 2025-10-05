@@ -20,34 +20,47 @@ export default async function handler(req, res) {
             const hazard = await Hazard.findById(id);
             if (!hazard) return res.status(404).json({ error: "Not found" });
             return res.status(200).json(hazard);
-        } else {
-            const { lat, lng, radius = 50 } = req.query;
-            const latNum = parseFloat(lat);
-            const lngNum = parseFloat(lng);
-            const radiusNum = parseInt(radius);
-
-            if (isNaN(latNum) || isNaN(lngNum) || isNaN(radiusNum)) return res.status(400).json({ error: "Invalid lat, lng, or radius" });
-            
-            const query = {
-                location: {
-                    $nearSphere: { $geometry: { type: "Point", coordinates: [lngNum, latNum] }, $maxDistance: radiusNum },
-                },
-            };
-            const token = req.headers.authorization?.split(" ")[1];
-            if (token) {
-                try {
-                    const user = jwt.verify(token, process.env.JWT_SECRET);
-                    if (req.query.mine === "true") {
-                        query.reportedBy = user.id;
-                    }
-                } catch {
-                    /* ignore invalid token for GET */
-                }
-            }
-
-            const hazards = await Hazard.find(query);
-            return res.status(200).json(hazards);
         }
+
+        if (req.query.mine === "true") {
+            const token = req.headers.authorization?.split(" ")[1];
+            if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+            try {
+                const user = jwt.verify(token, process.env.JWT_SECRET);
+                const hazards = await Hazard.find({ reportedBy: user.id });
+                return res.status(200).json(hazards);
+            } catch {
+                return res.status(401).json({ error: "Invalid token" });
+            }
+        }
+        const { lat, lng, radius = 50 } = req.query;
+        const latNum = parseFloat(lat);
+        const lngNum = parseFloat(lng);
+        const radiusNum = parseInt(radius);
+
+        if (isNaN(latNum) || isNaN(lngNum) || isNaN(radiusNum)) return res.status(400).json({ error: "Invalid lat, lng, or radius" });
+
+        const query = {
+            location: {
+                $nearSphere: { $geometry: { type: "Point", coordinates: [lngNum, latNum] }, $maxDistance: radiusNum },
+            },
+        };
+        const token = req.headers.authorization?.split(" ")[1];
+        if (token) {
+            try {
+                const user = jwt.verify(token, process.env.JWT_SECRET);
+                if (req.query.mine === "true") {
+                    query.reportedBy = user.id;
+                }
+            } catch {
+                /* ignore invalid token for GET */
+            }
+        }
+
+        const hazards = await Hazard.find(query);
+        return res.status(200).json(hazards);
+
     }
 
     if (req.method === "POST") {
