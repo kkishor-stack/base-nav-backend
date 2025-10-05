@@ -3,55 +3,79 @@ import Route from "../models/Route";
 import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {
-    await dbConnect();
+    try {
+        await dbConnect();
 
-    if (["POST", "PUT", "DELETE"].includes(req.method)) {
         const token = req.headers.authorization?.split(" ")[1];
-        if (!token) return res.status(401).json({ error: "Unauthorized" });
-        try { req.user = jwt.verify(token, process.env.JWT_SECRET); }
-        catch { return res.status(401).json({ error: "Invalid token" }); }
-    }
 
-    const { id, favorite } = req.query;
-
-    if (req.method === "GET") {
-        const token = req.headers.authorization?.split(" ")[1];
-        if (!token) return res.status(401).json({ error: "Unauthorized" });
-
-        try {
-            req.user = jwt.verify(token, process.env.JWT_SECRET);
-        } catch {
-            return res.status(401).json({ error: "Invalid token" });
+        if (["POST", "PUT", "DELETE"].includes(req.method)) {
+            // const token = req.headers.authorization?.split(" ")[1];
+            if (!token) return res.status(401).json({ error: "Unauthorized, No token" });
+            try { req.user = jwt.verify(token, process.env.JWT_SECRET); }
+            catch { return res.status(401).json({ error: "Invalid token" }); }
         }
-        if (id) {
-            const route = await Route.findById(id).populate("hazardsEncountered");
-            if (!route) return res.status(404).json({ error: "Not found" });
-            return res.status(200).json(route);
-        } else {
-            const { recent, fav } = req.query;
-            const filter = { userId: req.user?.id };
-            if (fav === "true") filter.isFavorite = true;
-            const routes = await Route.find(filter).populate("hazardsEncountered").sort({ completedAt: -1 }).limit(recent ? 3 : 100);
-            return res.status(200).json(routes);
+
+        const { id, favorite } = req.query;
+
+        if (req.method === "GET") {
+            // const token = req.headers.authorization?.split(" ")[1];
+            // if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+            // try {
+            //     req.user = jwt.verify(token, process.env.JWT_SECRET);
+            // } catch {
+            //     return res.status(401).json({ error: "Invalid token" });
+            // }
+            if (id) {
+                const route = await Route.findById(id).populate("hazardsEncountered");
+                if (!route) return res.status(404).json({ error: "Not found" });
+                return res.status(200).json(route);
+            } else {
+                const { recent, fav } = req.query;
+                const userId = req.user.id || req.user._id;
+                const filter = { userId };
+                if (fav === "true") filter.isFavorite = true;
+                const routes = await Route.find(filter).populate("hazardsEncountered").sort({ completedAt: -1 }).limit(recent ? 3 : 100);
+                return res.status(200).json(routes);
+            }
         }
-    }
 
-    if (req.method === "POST") {
-        const newRoute = await Route.create({ ...req.body, userId: req.user.id });
-        return res.status(201).json(newRoute);
-    }
+        if (req.method === "POST") {
+            const userId = req.user.id || req.user._id;
 
-    if (req.method === "PUT") {
-        if (!id) return res.status(400).json({ error: "ID required" });
-        const updated = await Route.findByIdAndUpdate(id, { isFavorite: favorite === "true" }, { new: true });
-        return res.status(200).json(updated);
-    }
+            // Validate body
+            if (!req.body.origin || !req.body.destination)
+                return res.status(400).json({ error: "Origin and destination are required" });
 
-    if (req.method === "DELETE") {
-        if (!id) return res.status(400).json({ error: "ID required" });
-        await Route.findByIdAndDelete(id);
-        return res.status(200).json({ message: "Deleted" });
-    }
+            if (
+                req.body.origin.lat === undefined ||
+                req.body.origin.lng === undefined ||
+                req.body.destination.lat === undefined ||
+                req.body.destination.lng === undefined
+            ) {
+                return res.status(400).json({ error: "Latitude and longitude must be provided" });
+            }
+            const newRoute = await Route.create({ ...req.body, userId });
+            return res.status(201).json(newRoute);
+        }
 
-    return res.status(405).json({ error: "Method not allowed" });
+        if (req.method === "PUT") {
+            if (!id) return res.status(400).json({ error: "ID required" });
+            const updated = await Route.findByIdAndUpdate(id, { isFavorite: favorite === "true" }, { new: true });
+            if (!updated) return res.status(404).json({ error: "Route not found" });
+            return res.status(200).json(updated);
+        }
+
+        if (req.method === "DELETE") {
+            if (!id) return res.status(400).json({ error: "ID required" });
+            const deleted = await Route.findByIdAndDelete(id);
+            if (!deleted) return res.status(404).json({ error: "Route not found" });
+            return res.status(200).json({ message: "Deleted" });
+        }
+
+        return res.status(405).json({ error: "Method not allowed" });
+    } catch (error) {
+        console.error("Route API Error:", error);
+        return res.status(500).json({ error: "Internal Server Error" });
+    }
 }
