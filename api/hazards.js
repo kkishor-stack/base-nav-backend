@@ -1,13 +1,36 @@
 // api/hazards.js
+import jwt from "jsonwebtoken";
 import dbConnect from "../lib/dbconnect";
 import Hazard from "../models/Hazard";
-import jwt from "jsonwebtoken";
 import Report from "../models/Report";
 
 async function verifyReportWithML(report) {
     // Placeholder — later integrate ML or manual check logic
     // e.g. send to model API, or queue for moderation
     return Math.random() > 0.3; // temporary random verification (70% chance)
+}
+
+// Move verified reports to hazards
+async function processPendingReports() {
+    const pendingReports = await Report.find({ status: "pending" });
+
+    for (const report of pendingReports) {
+        const verified = await verifyReportWithML(report);
+        if (!verified) continue;
+
+        await Hazard.create({
+            userId: report.userId, // keep this consistent with your Hazard model
+            reportedBy: report.userId,
+            type: report.type,
+            severity: "moderate", // or derive later from ML
+            description: report.details,
+            location: report.location,
+            active: true,
+        });
+
+        report.status = "verified";
+        await report.save();
+    }
 }
 
 export default async function handler(req, res) {
@@ -21,7 +44,8 @@ export default async function handler(req, res) {
         catch { return res.status(401).json({ error: "Invalid token" }); }
     }
 
-    const { id, origin, destination } = req.query;
+    const { id } = req.query;
+    // const { id, origin, destination } = req.query;
 
     if (req.method === "GET") {
         if (id) {
@@ -77,26 +101,26 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-        if (origin && destination) {
-            // TODO: hazards along route
-            return res.status(200).json([]);
-        }
-        const { lat, lng, type, severity, description, images, expiresAt } = req.body;
-        const latNum = parseFloat(lat);
-        const lngNum = parseFloat(lng);
+        // if (origin && destination) {
+        //     // TODO: hazards along route
+        //     return res.status(200).json([]);
+        // }
+        // const { lat, lng, type, severity, description, images, expiresAt } = req.body;
+        // const latNum = parseFloat(lat);
+        // const lngNum = parseFloat(lng);
 
-        if (isNaN(latNum) || isNaN(lngNum)) {
-            return res.status(400).json({ error: "Invalid lat or lng" });
-        }
-        const userId = req.user.id || req.user._id; // or req.user._id if using Mongo ObjectId
+        // if (isNaN(latNum) || isNaN(lngNum)) {
+        //     return res.status(400).json({ error: "Invalid lat or lng" });
+        // }
+        // const userId = req.user.id || req.user._id; // or req.user._id if using Mongo ObjectId
 
-        const newReport = await Report.create({
-            user: userId,
-            type,
-            details: description,
-            location: { type: "Point", coordinates: [lngNum, latNum] },
-            status: "pending",
-        });
+        // const newReport = await Report.create({
+        //     user: userId,
+        //     type,
+        //     details: description,
+        //     location: { type: "Point", coordinates: [lngNum, latNum] },
+        //     status: "pending",
+        // });
 
         // STEP 2️⃣: (Optional placeholder) — automatic verification later
         // Uncomment later when ML or manual verification is ready
@@ -116,9 +140,11 @@ export default async function handler(req, res) {
         }
         */
 
-        return res.status(201).json({
-            message: "Report created", report: newReport,
-        });
+        // return res.status(201).json({
+        //     message: "Report created", report: newReport,
+        // });
+        return res.status(405).json({ error: "Hazards are not created directly. Submit via /api/reports first." });
+
     }
 
     if (req.method === "PUT") {
@@ -143,4 +169,10 @@ export default async function handler(req, res) {
     }
 
     return res.status(405).json({ error: "Method not allowed" });
+}
+
+export async function processHandler(req, res) {
+    await dbConnect();
+    await processPendingReports();
+    return res.status(200).json({ message: "Pending reports processed" });
 }
