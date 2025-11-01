@@ -170,9 +170,3 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Method not allowed" });
 }
-
-export async function processHandler(req, res) {
-    await dbConnect();
-    await processPendingReports();
-    return res.status(200).json({ message: "Pending reports processed" });
-}
