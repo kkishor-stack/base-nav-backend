@@ -2,6 +2,13 @@
 import dbConnect from "../lib/dbconnect";
 import Hazard from "../models/Hazard";
 import jwt from "jsonwebtoken";
+import Report from "../models/Report";
+
+async function verifyReportWithML(report) {
+    // Placeholder — later integrate ML or manual check logic
+    // e.g. send to model API, or queue for moderation
+    return Math.random() > 0.3; // temporary random verification (70% chance)
+}
 
 export default async function handler(req, res) {
     await dbConnect();
@@ -29,35 +36,40 @@ export default async function handler(req, res) {
 
             try {
                 const user = jwt.verify(token, process.env.JWT_SECRET);
-                const hazards = await Hazard.find({ reportedBy: user.id });
+                const hazards = await Hazard.find({ userId: user.id });
                 return res.status(200).json(hazards);
             } catch {
                 return res.status(401).json({ error: "Invalid token" });
             }
         }
+
+        let query = { active: true }; // Start with a default filter for active hazards
+
         const { lat, lng, radius = 50 } = req.query;
         const latNum = parseFloat(lat);
         const lngNum = parseFloat(lng);
         const radiusNum = parseInt(radius);
 
-        if (isNaN(latNum) || isNaN(lngNum) || isNaN(radiusNum)) return res.status(400).json({ error: "Invalid lat, lng, or radius" });
-
-        const query = {
-            location: {
+        if (!isNaN(latNum) && !isNaN(lngNum) && !isNaN(radiusNum)) {
+            query.location = {
                 $nearSphere: { $geometry: { type: "Point", coordinates: [lngNum, latNum] }, $maxDistance: radiusNum },
-            },
-        };
-        const token = req.headers.authorization?.split(" ")[1];
-        if (token) {
-            try {
-                const user = jwt.verify(token, process.env.JWT_SECRET);
-                if (req.query.mine === "true") {
-                    query.reportedBy = user.id;
-                }
-            } catch {
-                /* ignore invalid token for GET */
-            }
+            };
+        } else if (lat || lng || radius) {
+
+            return res.status(400).json({ error: "Invalid lat, lng, or radius" });
         }
+
+        // const token = req.headers.authorization?.split(" ")[1];
+        // if (token) {
+        //     try {
+        //         const user = jwt.verify(token, process.env.JWT_SECRET);
+        //         if (req.query.mine === "true") {
+        //             query.reportedBy = user.id;
+        //         }
+        //     } catch {
+        //         /* ignore invalid token for GET */
+        //     }
+        // }
 
         const hazards = await Hazard.find(query);
         return res.status(200).json(hazards);
@@ -78,11 +90,35 @@ export default async function handler(req, res) {
         }
         const userId = req.user.id || req.user._id; // or req.user._id if using Mongo ObjectId
 
-        const newHazard = await Hazard.create({
-            userId: userId,            
-            reportedBy: userId, type, severity, description, images, expiresAt, location: { type: "Point", coordinates: [lngNum, latNum] },
+        const newReport = await Report.create({
+            user: userId,
+            type,
+            details: description,
+            location: { type: "Point", coordinates: [lngNum, latNum] },
+            status: "pending",
         });
-        return res.status(201).json(newHazard);
+
+        // STEP 2️⃣: (Optional placeholder) — automatic verification later
+        // Uncomment later when ML or manual verification is ready
+        /*
+        const verified = await verifyReportWithML(newReport);
+        if (verified) {
+          await Hazard.create({
+            userId: userId,
+            reportedBy: userId,
+            type,
+            severity,
+            description,
+            images,
+            expiresAt,
+            location: { type: "Point", coordinates: [lngNum, latNum] },
+          });
+        }
+        */
+
+        return res.status(201).json({
+            message: "Report created", report: newReport,
+        });
     }
 
     if (req.method === "PUT") {
