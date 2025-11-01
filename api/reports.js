@@ -22,7 +22,7 @@ export default async function handler(req, res) {
       if (!token) return res.status(401).json({ error: "Unauthorized" });
       try {
         const user = jwt.verify(token, process.env.JWT_SECRET);
-        query.user = user.id;
+        query.userId = user.id;
       } catch {
         return res.status(401).json({ error: "Invalid token" });
       }
