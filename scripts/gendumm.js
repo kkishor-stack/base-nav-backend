@@ -1,6 +1,6 @@
 // scripts/generateDummyReports.js
-const mongoose = require("mongoose");
-const Report = require("../models/Report");
+import mongoose from "mongoose";
+import Report from "../models/Report.js";
 
 const MONGO_URI = "mongodb+srv://navapp_user:jaisiyaram123@navigationcluster.9guj9w6.mongodb.net/navapp?retryWrites=true&w=majority"; // change this
 const USER_ID = new mongoose.Types.ObjectId("68e0e65f00e28d27a96c7c48");
