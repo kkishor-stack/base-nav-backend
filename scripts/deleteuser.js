@@ -1,38 +1,58 @@
-// /api/deleteUsers.js
+// scripts/deleteReports.js
+import dotenv from "dotenv";
+dotenv.config();
+
 import mongoose from "mongoose";
-import Report from "../models/Report.js"; // adjust path to your model
+import Report from "../models/Report.js";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) throw new Error("Missing MONGO_URI in environment variables.");
 
-async function connectDB() {
-    if (mongoose.connection.readyState === 1) return;
-    if (!MONGODB_URI) throw new Error("⚠️ Missing MONGODB_URI in environment");
-  await mongoose.connect(MONGODB_URI);
-}
-
-export default async function handler(req, res) {
-  if (req.method !== "DELETE") {
-    return res.status(405).json({ error: "Method not allowed" });
+/**
+ * Deletes reports using any valid MongoDB filter object.
+ * @param {Object} filter - A MongoDB query object (e.g. { status: "pending" }).
+ */
+export async function deleteReports(filter = {}) {
+  if (!filter || typeof filter !== "object" || Object.keys(filter).length === 0) {
+    console.error("❌ No valid filter provided. Refusing to delete everything.");
+    process.exit(1);
   }
+
+  await mongoose.connect(MONGO_URI);
+  console.log("✅ Connected to MongoDB");
 
   try {
-    await connectDB();
-
-    const { filter } = req.body; // filter passed from frontend
-    if (!filter || typeof filter !== "object") {
-      return res.status(400).json({ error: "Missing or invalid filter" });
-    }
-
     const result = await Report.deleteMany(filter);
-
-    res.status(200).json({
-      message: "Documents deleted successfully",
-      deletedCount: result.deletedCount,
-    });
-  } catch (error) {
-    console.error("Delete error:", error);
-    res.status(500).json({ error: "Server error" });
+    console.log(`🗑️ Deleted ${result.deletedCount} reports matching:`, JSON.stringify(filter, null, 2));
+  } catch (err) {
+    console.error("❌ Error deleting reports:", err);
   } finally {
-    await mongoose.connection.close().catch(()=> {});
+    await mongoose.disconnect();
+    console.log("🔌 Disconnected from MongoDB");
   }
+}
+
+// --- CLI mode: run with a JSON filter ---
+if (import.meta.url === `file://${process.argv[1]}`) {
+  // Example usage:
+  // node scripts/deleteReports.js '{"status":"pending"}'
+  // node scripts/deleteReports.js '{"userId":"68e0e65f00e28d27a96c7c48"}'
+  // node scripts/deleteReports.js '{"reportedAt":{"$lt":"2025-11-01T00:00:00Z"}}'
+
+  const arg = process.argv[2];
+  if (!arg) {
+    console.error("Usage: node scripts/deleteReports.js '{\"status\":\"pending\"}'");
+    process.exit(1);
+  }
+
+  let filter;
+  try {
+    filter = JSON.parse(arg);
+  } catch (err) {
+    console.error("❌ Invalid JSON filter. Make sure you wrap it in single quotes.");
+    console.error("Example: node scripts/deleteReports.js '{\"status\":\"pending\"}'");
+    process.exit(1);
+  }
+
+  deleteReports(filter).then(() => process.exit(0));
 }
