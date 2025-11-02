@@ -1,4 +1,4 @@
-// api/hazards.js
+// api/hazards/index.js
 import jwt from "jsonwebtoken";
 import dbConnect from "../../lib/dbconnect";
 import Hazard from "../../models/Hazard";
@@ -11,7 +11,7 @@ async function verifyReportWithML(report) {
 }
 
 // Move verified reports to hazards
-async function processPendingReports() {
+export async function processPendingReports() {
     const pendingReports = await Report.find({ status: "pending" });
 
     for (const report of pendingReports) {
