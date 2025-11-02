@@ -1,4 +1,7 @@
 // scripts/generateDummyReports.js
+import dotenv from "dotenv";
+dotenv.config();
+
 import mongoose from "mongoose";
 import Report from "../models/Report.js";
 
@@ -50,17 +53,19 @@ const generateDummyReports = async (count = 50) => {
 
 const main = async () => {
   try {
+    console.log("🔌 Connecting to MongoDB...");
     await mongoose.connect(MONGO_URI);
     console.log("Connected to MongoDB");
 
     const reports = await generateDummyReports(100); // number of reports to insert
     await Report.insertMany(reports);
 
-    console.log(`${reports.length} dummy reports created successfully`);
+    console.log(`🗂️ ${reports.length} dummy reports created successfully`);
   } catch (err) {
-    console.error("Error generating dummy reports:", err);
+    console.error("❌ Error generating dummy reports:", err);
   } finally {
     await mongoose.disconnect();
+    console.log("🔌 Disconnected from MongoDB");
   }
 };
 
