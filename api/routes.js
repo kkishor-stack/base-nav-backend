@@ -82,9 +82,9 @@
 
 // api/routes.js
 import jwt from "jsonwebtoken";
-import dbConnect from "../lib/dbconnect";
-import Hazard from "../models/Hazard";
-import Route from "../models/Route";
+import dbConnect from "../lib/dbconnect.js";
+import Hazard from "../models/Hazard.js";
+import Route from "../models/Route.js";
 
 export default async function handler(req, res) {
   try {

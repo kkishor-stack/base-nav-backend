@@ -1,5 +1,5 @@
-import dbConnect from "../lib/dbconnect";
-import Place from "../models/Place";
+import dbConnect from "../lib/dbconnect.js";
+import Place from "../models/Place.js";
 import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {

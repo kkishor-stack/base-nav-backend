@@ -1,6 +1,6 @@
 // api/reports.js
-import dbConnect from "../lib/dbconnect";
-import Report from "../models/Report";
+import dbConnect from "../lib/dbconnect.js";
+import Report from "../models/Report.js";
 import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {
