@@ -1,5 +1,5 @@
 // api/hazards/process.js
-import dbConnect from "../../lib/dbconnect";
+import dbConnect from "../../lib/dbconnect.js";
 import { processPendingReports } from "./index.js";
 
 export default async function handler(req, res) {

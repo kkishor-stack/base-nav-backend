@@ -1,8 +1,8 @@
 // api/hazards/index.js
 import jwt from "jsonwebtoken";
-import dbConnect from "../../lib/dbconnect";
-import Hazard from "../../models/Hazard";
-import Report from "../../models/Report";
+import dbConnect from "../../lib/dbconnect.js";
+import Hazard from "../../models/Hazard.js";
+import Report from "../../models/Report.js";
 
 async function verifyReportWithML(report) {
     // Placeholder — later integrate ML or manual check logic
