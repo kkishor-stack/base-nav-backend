@@ -1,3 +1,4 @@
+// api/hazards/process.js
 import dbConnect from "../../lib/dbconnect";
 import { processPendingReports } from "./index.js";
 
