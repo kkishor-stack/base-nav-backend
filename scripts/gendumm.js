@@ -5,7 +5,11 @@ dotenv.config();
 import mongoose from "mongoose";
 import Report from "../models/Report.js";
 
-const MONGO_URI = process.env.MONGODB_URI; // change this
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (!MONGO_URI) {
+  console.error("❌ Missing MONGO_URI or MONGODB_URI in environment variables.");
+  process.exit(1);
+}
 const USER_ID = new mongoose.Types.ObjectId("69075ab67920ab4705cb6551");
 
 const reportTypes = ["accident", "construction", "police", "traffic", "hazard", "general"];
