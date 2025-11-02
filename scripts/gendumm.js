@@ -2,7 +2,7 @@
 import mongoose from "mongoose";
 import Report from "../models/Report.js";
 
-const MONGO_URI = "mongodb+srv://navapp_user:jaisiyaram123@navigationcluster.9guj9w6.mongodb.net/navapp?retryWrites=true&w=majority"; // change this
+const MONGO_URI = process.env.MONGODB_URI; // change this
 const USER_ID = new mongoose.Types.ObjectId("69075ab67920ab4705cb6551");
 
 const reportTypes = ["accident", "construction", "police", "traffic", "hazard", "general"];
