@@ -4,10 +4,9 @@ import Report from "../models/Report.js"; // adjust path to your model
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) throw new Error("⚠️ Missing MONGODB_URI in environment");
-
 async function connectDB() {
-  if (mongoose.connection.readyState === 1) return;
+    if (mongoose.connection.readyState === 1) return;
+    if (!MONGODB_URI) throw new Error("⚠️ Missing MONGODB_URI in environment");
   await mongoose.connect(MONGODB_URI);
 }
 
