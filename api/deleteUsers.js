@@ -33,5 +33,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error("Delete error:", error);
     res.status(500).json({ error: "Server error" });
+  } finally {
+    await mongoose.connection.close().catch(()=> {});
   }
 }
