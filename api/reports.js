@@ -1,7 +1,7 @@
 // api/reports.js
+import jwt from "jsonwebtoken";
 import dbConnect from "../lib/dbconnect.js";
 import Report from "../models/Report.js";
-import jwt from "jsonwebtoken";
 
 export default async function handler(req, res) {
   await dbConnect();
@@ -28,8 +28,6 @@ export default async function handler(req, res) {
       }
     }
     const reports = await Report.find(query);
-    // const { bounds } = req.query;
-    // const reports = await Report.find(bounds ? { location: { $geoWithin: { $geometry: JSON.parse(bounds) } } } : {});
     return res.status(200).json(reports);
   }
 
@@ -51,26 +49,43 @@ export default async function handler(req, res) {
       },
       status: "pending",
     });
-    // const newReport = await Report.create({ ...req.body, reportedBy: req.user.id });
     return res.status(201).json({ message: "Report created", report: newReport });
   }
 
   if (req.method === "PUT") {
+    // Changed: support/reject actions that toggle user's impression and ensure one impression per user
     if (!id || !action) return res.status(400).json({ error: "ID and action required" });
     const report = await Report.findById(id);
     if (!report) return res.status(404).json({ error: "Not found" });
 
-    if (action === "confirm") {
-      if (!report.confirmedBy.includes(req.user.id)) report.confirmedBy.push(req.user.id);
-    } else if (action === "deny") {
-      if (!report.deniedBy.includes(req.user.id)) report.deniedBy.push(req.user.id);
+    // Ensure arrays exist
+    report.approvedBy = report.approvedBy || [];
+    report.disapprovedBy = report.disapprovedBy || [];
+
+    const userId = req.user.id;
+
+    if (action === "support") {
+      // Add to approvedBy if not present, remove from disapprovedBy
+      if (!report.approvedBy.map(String).includes(String(userId))) report.approvedBy.push(userId);
+      report.disapprovedBy = report.disapprovedBy.filter(u => String(u) !== String(userId));
+    } else if (action === "reject") {
+      if (!report.disapprovedBy.map(String).includes(String(userId))) report.disapprovedBy.push(userId);
+      report.approvedBy = report.approvedBy.filter(u => String(u) !== String(userId));
     } else {
       return res.status(400).json({ error: "Invalid action" });
     }
-    // if (report.confirmedBy.length >= 3) report.status = "verified";
 
     await report.save();
-    return res.status(200).json(report);
+
+    // Return the updated report (with counts convenient for client)
+    const updatedReport = await Report.findById(id).lean();
+    return res.status(200).json({
+      report: updatedReport,
+      counts: {
+        support: (updatedReport.approvedBy || []).length,
+        reject: (updatedReport.disapprovedBy || []).length
+      }
+    });
   }
 
   if (req.method === "DELETE") {
