@@ -1,6 +1,7 @@
 // /api/deleteUsers.js
 import mongoose from "mongoose";
 import Report from "../models/ReportingHazards.js"; // adjust path to your model
+import Hazard from "../models/Hazard.js";
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing or invalid filter" });
     }
 
-    const result = await Report.deleteMany(filter);
+    const result = await Hazard.deleteMany(filter);
 
     res.status(200).json({
       message: "Documents deleted successfully",
