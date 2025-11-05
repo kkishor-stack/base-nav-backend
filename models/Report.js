@@ -11,12 +11,11 @@ const ReportSchema = new mongoose.Schema({
   },
   reportedAt: { type: Date, default: Date.now },
   status: {
-    type: String, enum: ["pending", "verified", "rejected", "active", "resolved", "expired"],
+    type: String, enum: ["pending", "accepted", "rejected", "active", "expired"],
     default: "pending"
   },
-  confirmedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  deniedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  ttl: { type: Number, default: 60 } // minutes
+  approvedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  disapprovedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], 
 }, { timestamps: true });
 
 ReportSchema.index({ location: "2dsphere" });
