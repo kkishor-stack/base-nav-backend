@@ -28,7 +28,7 @@ export async function processPendingReports() {
             active: true,
         });
 
-        report.status = "verified";
+        report.status = "accepted";
         await report.save();
     }
 }
