@@ -1,6 +1,6 @@
 // /api/deleteUsers.js
 import mongoose from "mongoose";
-import Report from "../models/Report.js"; // adjust path to your model
+import Report from "../models/ReportingHazards.js"; // adjust path to your model
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

@@ -2,7 +2,7 @@
 import jwt from "jsonwebtoken";
 import dbConnect from "../../lib/dbconnect.js";
 import Hazard from "../../models/Hazard.js";
-import Report from "../../models/Report.js";
+import Report from "../../models/ReportingHazards.js";
 
 async function verifyReportWithML(report) {
     // Placeholder — later integrate ML or manual check logic
