@@ -1,7 +1,7 @@
 // api/reports.js
 import jwt from "jsonwebtoken";
 import dbConnect from "../lib/dbconnect.js";
-import Report from "../models/ReportingHazards.js";
+import { Report } from "../models/ReportingHazards.js";
 
 export default async function handler(req, res) {
   await dbConnect();
