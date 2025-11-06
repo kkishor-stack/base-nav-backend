@@ -30,7 +30,7 @@ const randomCoordinate = () => {
 };
 
 const randomStatus = () => {
-  const statuses = ["pending", "verified", "active", "resolved"];
+  const statuses = ["pending", "accepted", "rejected", "active", "expired"];
   return statuses[Math.floor(Math.random() * statuses.length)];
 };
 
