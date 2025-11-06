@@ -1,8 +1,8 @@
 // api/hazards/index.js
 import jwt from "jsonwebtoken";
 import dbConnect from "../../lib/dbconnect.js";
-import Hazard from "../../models/Hazard.js";
-import Report from "../../models/ReportingHazards.js";
+// import Hazard from "../../models/Hazard.js";
+import { Report, HazardsVerified } from "../../models/ReportingHazards.js";
 
 async function verifyReportWithML(report) {
     // Placeholder — later integrate ML or manual check logic
@@ -18,7 +18,7 @@ export async function processPendingReports() {
         const verified = await verifyReportWithML(report);
         if (!verified) continue;
 
-        await Hazard.create({
+        await HazardsVerified.create({
             userId: report.userId, // keep this consistent with your Hazard model
             reportedBy: report.userId,
             type: report.type,
@@ -49,7 +49,7 @@ export default async function handler(req, res) {
 
     if (req.method === "GET") {
         if (id) {
-            const hazard = await Hazard.findById(id);
+            const hazard = await HazardsVerified.findById(id);
             if (!hazard) return res.status(404).json({ error: "Not found" });
             return res.status(200).json(hazard);
         }
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
             try {
                 const user = jwt.verify(token, process.env.JWT_SECRET);
-                const hazards = await Hazard.find({ userId: user.id });
+                const hazards = await HazardVerified.find({ userId: user.id });
                 return res.status(200).json(hazards);
             } catch {
                 return res.status(401).json({ error: "Invalid token" });
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
         //     }
         // }
 
-        const hazards = await Hazard.find(query);
+        const hazards = await HazardsVerified.find(query);
         return res.status(200).json(hazards);
 
     }
@@ -158,13 +158,13 @@ export default async function handler(req, res) {
             delete req.body.lat;
             delete req.body.lng;
         }
-        const updated = await Hazard.findByIdAndUpdate(id, req.body, { new: true });
+        const updated = await HazardsVerified.findByIdAndUpdate(id, req.body, { new: true });
         return res.status(200).json(updated);
     }
 
     if (req.method === "DELETE") {
         if (!id) return res.status(400).json({ error: "ID required" });
-        await Hazard.findByIdAndDelete(id);
+        await HazardVerified.findByIdAndDelete(id);
         return res.status(200).json({ message: "Deleted" });
     }
 
