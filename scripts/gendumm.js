@@ -61,7 +61,7 @@ const main = async () => {
     await mongoose.connect(MONGO_URI);
     console.log("Connected to MongoDB");
 
-    const reports = await generateDummyReports(100); // number of reports to insert
+    const reports = await generateDummyReports(40); // number of reports to insert
     await Report.insertMany(reports);
 
     console.log(`🗂️ ${reports.length} dummy reports created successfully`);
