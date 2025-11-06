@@ -32,44 +32,87 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-
     const { lat, lng, type, description } = req.body;
-
     if (isNaN(lat) || isNaN(lng)) {
       return res.status(400).json({ error: "Invalid latitude or longitude" });
     }
-
+    const userId = req.user.id;
+    const coordinates = [parseFloat(lng), parseFloat(lat)];
+    // Check for existing report or hazard within 5 meters
+    // 5 meters = 5 / 6378137 (Earth radius in meters) in radians
+    const maxDistance = 5; // meters
+    // Check in both reports (pending/accepted) and hazardsverified
+    const existingReport = await Report.findOne({
+      location: {
+        $nearSphere: {
+          $geometry: { type: "Point", coordinates },
+          $maxDistance: maxDistance
+        }
+      },
+      status: { $in: ["pending", "accepted"] }
+    });
+    // Import HazardsVerified model
+    const { HazardsVerified } = await import("../models/ReportingHazards.js");
+    const existingHazard = await HazardsVerified.findOne({
+      location: {
+        $nearSphere: {
+          $geometry: { type: "Point", coordinates },
+          $maxDistance: maxDistance
+        }
+      },
+      status: "accepted"
+    });
+    if (existingReport || existingHazard) {
+      return res.status(409).json({
+        error: "A hazard is already marked within 4-5 meters. Please upvote that hazard instead of creating a new report."
+      });
+    }
+    // Create new report and auto-support by user
     const newReport = await Report.create({
-      userId: req.user.id,
+      userId,
       type,
       description,
       location: {
         type: "Point",
-        coordinates: [parseFloat(lng), parseFloat(lat)],
+        coordinates
       },
       status: "pending",
+      approvedBy: [userId] // auto-support
     });
     return res.status(201).json({ message: "Report created", report: newReport });
   }
 
   if (req.method === "PUT") {
-    // Changed: support/reject actions that toggle user's impression and ensure one impression per user
+    // Voting logic: support/reject, only one vote per user, cannot vote on own report
     if (!id || !action) return res.status(400).json({ error: "ID and action required" });
     const report = await Report.findById(id);
     if (!report) return res.status(404).json({ error: "Not found" });
+
+    const userId = req.user.id;
+    // Prevent voting on own report
+    if (String(report.userId) === String(userId)) {
+      return res.status(403).json({ error: "You cannot vote on your own report." });
+    }
 
     // Ensure arrays exist
     report.approvedBy = report.approvedBy || [];
     report.disapprovedBy = report.disapprovedBy || [];
 
-    const userId = req.user.id;
+    // Check if user already voted (support or reject)
+    const alreadySupported = report.approvedBy.map(String).includes(String(userId));
+    const alreadyRejected = report.disapprovedBy.map(String).includes(String(userId));
+    if (alreadySupported && action === "support") {
+      return res.status(409).json({ error: "You have already supported this report." });
+    }
+    if (alreadyRejected && action === "reject") {
+      return res.status(409).json({ error: "You have already rejected this report." });
+    }
 
     if (action === "support") {
-      // Add to approvedBy if not present, remove from disapprovedBy
-      if (!report.approvedBy.map(String).includes(String(userId))) report.approvedBy.push(userId);
+      if (!alreadySupported) report.approvedBy.push(userId);
       report.disapprovedBy = report.disapprovedBy.filter(u => String(u) !== String(userId));
     } else if (action === "reject") {
-      if (!report.disapprovedBy.map(String).includes(String(userId))) report.disapprovedBy.push(userId);
+      if (!alreadyRejected) report.disapprovedBy.push(userId);
       report.approvedBy = report.approvedBy.filter(u => String(u) !== String(userId));
     } else {
       return res.status(400).json({ error: "Invalid action" });
