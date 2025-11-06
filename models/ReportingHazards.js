@@ -14,8 +14,13 @@ const ReportSchema = new mongoose.Schema({
     type: String, enum: ["pending", "accepted", "rejected", "active", "expired"],
     default: "pending"
   },
+  severity: String,
+  reportedBy: String,
   approvedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  disapprovedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], 
+  disapprovedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  images: [String],
+  expiresAt: Date
+
 }, { timestamps: true });
 
 ReportSchema.index({ location: "2dsphere" });
