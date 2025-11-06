@@ -10,7 +10,7 @@ if (!MONGO_URI) {
   console.error("❌ Missing MONGO_URI or MONGODB_URI in environment variables.");
   process.exit(1);
 }
-const USER_ID = new mongoose.Types.ObjectId("690c952dff6bcdf8f624c5b4");
+const USER_ID = new mongoose.Types.ObjectId("690caed3e1d3ee6171792eb6");
 
 const reportTypes = ["accident", "construction", "police", "traffic", "hazard", "general"];
 const descriptions = [
