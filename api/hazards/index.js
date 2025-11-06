@@ -69,7 +69,7 @@ export default async function handler(req, res) {
             }
         }
 
-        let query = { active: true }; // Start with a default filter for active hazards
+        let query = { status: "accepted" }; // Start with a default filter for active hazards
 
         const { lat, lng, radius = 50 } = req.query;
         const latNum = parseFloat(lat);
