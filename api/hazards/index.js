@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import dbConnect from "../../lib/dbconnect.js";
 // import Hazard from "../../models/Hazard.js";
 import { Report, HazardsVerified } from "../../models/ReportingHazards.js";
+import { stat } from "fs";
 
 async function verifyReportWithML(report) {
     // Placeholder — later integrate ML or manual check logic
@@ -20,12 +21,13 @@ export async function processPendingReports() {
 
         await HazardsVerified.create({
             userId: report.userId, // keep this consistent with your Hazard model
-            reportedBy: report.userId,
             type: report.type,
+            description: report.description,
             severity: "normal", // or derive later from ML
-            description: report.details,
             location: report.location,
-            active: true,
+            status: "accepted",
+            images: report.images,
+            expiresAt: report.expiresAt
         });
 
         report.status = "accepted";
