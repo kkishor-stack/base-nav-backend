@@ -22,7 +22,7 @@ export async function processPendingReports() {
             userId: report.userId, // keep this consistent with your Hazard model
             reportedBy: report.userId,
             type: report.type,
-            severity: "moderate", // or derive later from ML
+            severity: "normal", // or derive later from ML
             description: report.details,
             location: report.location,
             active: true,
