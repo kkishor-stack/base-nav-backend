@@ -10,15 +10,15 @@ const ReportSchema = new mongoose.Schema({
     coordinates: { type: [Number], default: [0, 0] } // [lng, lat]
   },
   reportedAt: { type: Date, default: Date.now },
-  status: {
-    type: String, enum: ["pending", "accepted", "rejected", "active", "expired"],
-    default: "pending"
+  status: { type: String, enum: ["pending", "accepted", "rejected", "active", "expired"], default: "pending" },
+  severity: {
+    type: String,
+    enum: ["low", "normal", "high", "critical"], // Optional enum for control
+    default: "normal" // ✨ Sets the default to "normal"
   },
-  severity: String,
-  reportedBy: String,
   approvedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   disapprovedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  images: [String],
+  images: { type: [String], default: [] },
   expiresAt: Date
 
 }, { timestamps: true });
