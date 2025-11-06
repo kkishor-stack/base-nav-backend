@@ -24,8 +24,8 @@ const descriptions = [
 
 // Random coordinate generator (you can localize this range)
 const randomCoordinate = () => {
-  const lat = 26.235105 + Math.random() * 0.11; // e.g. around Delhi
-  const lng = 78.220300 + Math.random() * 0.11;
+  const lat = 26.224677 + Math.random() * 0.11; // e.g. around Delhi
+  const lng = 78.211669 + Math.random() * 0.11;
   return [lng, lat];
 };
 
