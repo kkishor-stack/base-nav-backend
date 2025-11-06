@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import mongoose from "mongoose";
-import Report from "../models/ReportingHazards.js";
+import { Report } from "../models/ReportingHazards.js";
 
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (!MONGO_URI) {
