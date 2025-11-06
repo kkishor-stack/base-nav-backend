@@ -24,13 +24,14 @@ const descriptions = [
 
 // Random coordinate generator (you can localize this range)
 const randomCoordinate = () => {
-  const lat = 26.24349 + Math.random() * 0.11; // e.g. around Delhi
-  const lng = 78.22892 + Math.random() * 0.11;
+  const lat = 26.235105 + Math.random() * 0.11; // e.g. around Delhi
+  const lng = 78.220300 + Math.random() * 0.11;
   return [lng, lat];
 };
 
 const randomStatus = () => {
-  const statuses = ["pending", "accepted", "rejected", "active", "expired"];
+  // const statuses = ["pending", "accepted", "rejected", "active", "expired"];
+  const statuses = ["pending"];
   return statuses[Math.floor(Math.random() * statuses.length)];
 };
 
