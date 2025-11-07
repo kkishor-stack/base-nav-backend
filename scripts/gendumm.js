@@ -29,11 +29,11 @@ const descriptions = [
 //   return [lng, lat];
 // };
 const randomCoordinate = () => {
-  const radius = 0.2; // degrees (~11km)
+  const radius = 6/111; // degrees (~11km)
   const r = radius * Math.sqrt(Math.random());
   const theta = Math.random() * 2 * Math.PI;
-  const lat = 26.229313409212075 + r * Math.cos(theta);
-  const lng = 78.2090485628578 + r * Math.sin(theta);
+  const lat = 26.230991432352692 + r * Math.cos(theta);
+  const lng = 78.21611742125243 + r * Math.sin(theta);
   return [lng, lat];
 };
 
@@ -72,7 +72,7 @@ const main = async () => {
     await mongoose.connect(MONGO_URI);
     console.log("Connected to MongoDB");
 
-    const reports = await generateDummyReports(40); // number of reports to insert
+    const reports = await generateDummyReports(30); // number of reports to insert
     await Report.insertMany(reports);
 
     console.log(`🗂️ ${reports.length} dummy reports created successfully`);
