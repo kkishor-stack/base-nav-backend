@@ -23,11 +23,21 @@ const descriptions = [
 ];
 
 // Random coordinate generator (you can localize this range)
+// const randomCoordinate = () => {
+//   const lat = 26.229313409212075 + (Math.random() - 0.5) * 0.2;
+//   const lng = 78.2090485628578 + (Math.random() - 0.5) * 0.2;
+//   return [lng, lat];
+// };
 const randomCoordinate = () => {
-  const lat = 26.224677 + Math.random() * 0.11; // e.g. around Delhi
-  const lng = 78.211669 + Math.random() * 0.11;
+  const radius = 0.2; // degrees (~11km)
+  const r = radius * Math.sqrt(Math.random());
+  const theta = Math.random() * 2 * Math.PI;
+  const lat = 26.229313409212075 + r * Math.cos(theta);
+  const lng = 78.2090485628578 + r * Math.sin(theta);
   return [lng, lat];
 };
+
+
 
 const randomStatus = () => {
   // const statuses = ["pending", "accepted", "rejected", "active", "expired"];
