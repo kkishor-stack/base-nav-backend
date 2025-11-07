@@ -2,8 +2,7 @@
 import jwt from "jsonwebtoken";
 import dbConnect from "../../lib/dbconnect.js";
 // import Hazard from "../../models/Hazard.js";
-import { Report, HazardsVerified } from "../../models/ReportingHazards.js";
-import { stat } from "fs";
+import { HazardsVerified, Report } from "../../models/ReportingHazards.js";
 
 async function verifyReportWithML(report) {
     // Placeholder — later integrate ML or manual check logic
@@ -19,7 +18,10 @@ export async function processPendingReports() {
         const verified = await verifyReportWithML(report);
         if (!verified) continue;
 
+        // Create the HazardsVerified document using the same _id as the original report
+        // so that clients and other endpoints can reference the same id across collections.
         await HazardsVerified.create({
+            _id: report._id,
             userId: report.userId, // keep this consistent with your Hazard model
             type: report.type,
             description: report.description,

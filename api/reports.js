@@ -83,24 +83,35 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "PUT") {
-    // Voting logic: support/reject, only one vote per user, cannot vote on own report
+    // Voting logic: support/reject, only one vote per user, cannot vote on own report/hazard
     if (!id || !action) return res.status(400).json({ error: "ID and action required" });
-    const report = await Report.findById(id);
-    if (!report) return res.status(404).json({ error: "Not found" });
+
+    // Try to find the document in Report first
+    let doc = await Report.findById(id);
+    let source = "report";
+
+    // If not found in reports, try HazardsVerified (same schema exported from ReportingHazards.js)
+    if (!doc) {
+      const { HazardsVerified } = await import("../models/ReportingHazards.js");
+      doc = await HazardsVerified.findById(id);
+      source = doc ? "hazard" : source;
+    }
+
+    if (!doc) return res.status(404).json({ error: "Not found" });
 
     const userId = req.user.id;
-    // Prevent voting on own report
-    if (String(report.userId) === String(userId)) {
+    // Prevent voting on own report/hazard
+    if (String(doc.userId) === String(userId)) {
       return res.status(403).json({ error: "You cannot vote on your own report." });
     }
 
     // Ensure arrays exist
-    report.approvedBy = report.approvedBy || [];
-    report.disapprovedBy = report.disapprovedBy || [];
+    doc.approvedBy = doc.approvedBy || [];
+    doc.disapprovedBy = doc.disapprovedBy || [];
 
     // Check if user already voted (support or reject)
-    const alreadySupported = report.approvedBy.map(String).includes(String(userId));
-    const alreadyRejected = report.disapprovedBy.map(String).includes(String(userId));
+    const alreadySupported = doc.approvedBy.map(String).includes(String(userId));
+    const alreadyRejected = doc.disapprovedBy.map(String).includes(String(userId));
     if (alreadySupported && action === "support") {
       return res.status(409).json({ error: "You have already supported this report." });
     }
@@ -109,24 +120,31 @@ export default async function handler(req, res) {
     }
 
     if (action === "support") {
-      if (!alreadySupported) report.approvedBy.push(userId);
-      report.disapprovedBy = report.disapprovedBy.filter(u => String(u) !== String(userId));
+      if (!alreadySupported) doc.approvedBy.push(userId);
+      doc.disapprovedBy = doc.disapprovedBy.filter(u => String(u) !== String(userId));
     } else if (action === "reject") {
-      if (!alreadyRejected) report.disapprovedBy.push(userId);
-      report.approvedBy = report.approvedBy.filter(u => String(u) !== String(userId));
+      if (!alreadyRejected) doc.disapprovedBy.push(userId);
+      doc.approvedBy = doc.approvedBy.filter(u => String(u) !== String(userId));
     } else {
       return res.status(400).json({ error: "Invalid action" });
     }
 
-    await report.save();
+    await doc.save();
 
-    // Return the updated report (with counts convenient for client)
-    const updatedReport = await Report.findById(id).lean();
+    // Return the updated document (with counts convenient for client)
+    // Pull fresh copy from same collection
+    let updatedDoc;
+    if (source === "report") updatedDoc = await Report.findById(id).lean();
+    else {
+      const { HazardsVerified } = await import("../models/ReportingHazards.js");
+      updatedDoc = await HazardsVerified.findById(id).lean();
+    }
+
     return res.status(200).json({
-      report: updatedReport,
+      report: updatedDoc,
       counts: {
-        support: (updatedReport.approvedBy || []).length,
-        reject: (updatedReport.disapprovedBy || []).length
+        support: (updatedDoc.approvedBy || []).length,
+        reject: (updatedDoc.disapprovedBy || []).length
       }
     });
   }
