@@ -17,6 +17,7 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     let query = {};
+    // if requesting only user's reports
     if (mine === "true") {
       const token = req.headers.authorization?.split(" ")[1];
       if (!token) return res.status(401).json({ error: "Unauthorized" });
@@ -27,6 +28,21 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: "Invalid token" });
       }
     }
+
+    // support geo query: lat, lng, radius (meters)
+    const { lat, lng, radius } = req.query;
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    const radiusNum = radius ? parseInt(radius) : undefined;
+    if (!isNaN(latNum) && !isNaN(lngNum) && radiusNum !== undefined && !isNaN(radiusNum)) {
+      query.location = {
+        $nearSphere: { $geometry: { type: "Point", coordinates: [lngNum, latNum] }, $maxDistance: radiusNum },
+      };
+    } else if (lat || lng || radius) {
+      // some param provided but invalid
+      return res.status(400).json({ error: "Invalid lat, lng, or radius" });
+    }
+
     const reports = await Report.find(query);
     return res.status(200).json(reports);
   }
