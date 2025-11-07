@@ -32,54 +32,58 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "POST") {
-    const { lat, lng, type, description } = req.body;
-    if (isNaN(lat) || isNaN(lng)) {
-      return res.status(400).json({ error: "Invalid latitude or longitude" });
-    }
-    const userId = req.user.id;
-    const coordinates = [parseFloat(lng), parseFloat(lat)];
-    // Check for existing report or hazard within 5 meters
-    // 5 meters = 5 / 6378137 (Earth radius in meters) in radians
-    const maxDistance = 5; // meters
-    // Check in both reports (pending/accepted) and hazardsverified
-    const existingReport = await Report.findOne({
-      location: {
-        $nearSphere: {
-          $geometry: { type: "Point", coordinates },
-          $maxDistance: maxDistance
-        }
-      },
-      status: { $in: ["pending", "accepted"] }
-    });
-    // Import HazardsVerified model
-    const { HazardsVerified } = await import("../models/ReportingHazards.js");
-    const existingHazard = await HazardsVerified.findOne({
-      location: {
-        $nearSphere: {
-          $geometry: { type: "Point", coordinates },
-          $maxDistance: maxDistance
-        }
-      },
-      status: "accepted"
-    });
-    if (existingReport || existingHazard) {
-      return res.status(409).json({
-        error: "A hazard is already marked within 4-5 meters. Please upvote that hazard instead of creating a new report."
+    try {
+      const { lat, lng, type, description } = req.body;
+      if (isNaN(lat) || isNaN(lng)) {
+        return res.status(400).json({ error: "Invalid latitude or longitude" });
+      }
+      const userId = req.user.id;
+      const coordinates = [parseFloat(lng), parseFloat(lat)];
+      // Check for existing report or hazard within 5 meters
+      const maxDistance = 5; // meters
+      // Check in reports (pending/accepted)
+      const existingReport = await Report.findOne({
+        location: {
+          $nearSphere: {
+            $geometry: { type: "Point", coordinates },
+            $maxDistance: maxDistance
+          }
+        },
+        status: { $in: ["pending", "accepted"] }
       });
+      // Import HazardsVerified model and check there as well
+      const { HazardsVerified } = await import("../models/ReportingHazards.js");
+      const existingHazard = await HazardsVerified.findOne({
+        location: {
+          $nearSphere: {
+            $geometry: { type: "Point", coordinates },
+            $maxDistance: maxDistance
+          }
+        },
+        status: "accepted"
+      });
+      if (existingReport || existingHazard) {
+        return res.status(409).json({
+          error: "A hazard is already marked within 4-5 meters. Please upvote that hazard instead of creating a new report."
+        });
+      }
+      // Create new report and auto-support by user
+      const newReport = await Report.create({
+        userId,
+        type,
+        description,
+        location: {
+          type: "Point",
+          coordinates
+        },
+        status: "pending",
+        approvedBy: [userId] // auto-support
+      });
+      return res.status(201).json({ message: "Report created", report: newReport });
+    } catch (err) {
+      console.error("POST /api/reports error:", err);
+      return res.status(500).json({ error: "Internal server error", details: err.message });
     }
-    // Create new report and auto-support by user
-    const newReport = await Report.create({
-      userId,
-      type,
-      description,
-      location: {
-        type: "Point",
-        coordinates
-      },
-      status: "pending",
-      approvedBy: [userId] // auto-support
-    });
-    return res.status(201).json({ message: "Report created", report: newReport });
   }
 
   if (req.method === "PUT") {
