@@ -26,7 +26,7 @@ export default async function handler(req, res) {
 
     const result = await Report.deleteMany(filter);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Documents deleted successfully",
       deletedCount: result.deletedCount,
     });
