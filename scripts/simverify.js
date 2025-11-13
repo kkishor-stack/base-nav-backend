@@ -4,7 +4,7 @@ dotenv.config();
 import mongoose from "mongoose";
 import { Report, HazardsVerified } from "../models/ReportingHazards.js";
 
-// 🔹 Add your test user ObjectIds (replace with real ones from your Users collection)
+// 🔹 Replace with real User ObjectIds
 const USER_IDS = [
   new mongoose.Types.ObjectId("6916394ddeee37f095939f4c"),
   new mongoose.Types.ObjectId("691632ecb6b74f485b6edf5f"),
@@ -22,6 +22,7 @@ if (!MONGO_URI) {
   process.exit(1);
 }
 
+// Helper: pick random subset
 const randomSubset = (arr, n) => {
   const shuffled = arr.slice().sort(() => 0.5 - Math.random());
   return shuffled.slice(0, n);
@@ -31,41 +32,60 @@ const simulateVerification = async () => {
   try {
     console.log("🔌 Connecting to MongoDB...");
     await mongoose.connect(MONGO_URI);
-    console.log("Connected to MongoDB ✅");
+    console.log("✅ Connected to MongoDB");
 
-    // Fetch all reports (you can filter e.g. { status: 'pending' })
+    // Fetch all reports with pending status
     const reports = await Report.find({ status: "pending" });
 
-    // Pick random subset of reports to mark as accepted
-    const selectedReports = randomSubset(reports, Math.floor(reports.length * 0.4)); // ~40% get accepted
+    // Randomly choose about 40% to process
+    const selectedReports = randomSubset(reports, Math.floor(reports.length * 0.4));
+
+    let convertedCount = 0;
 
     for (const report of selectedReports) {
-      const approverCount = Math.floor(Math.random() * 5) + 3; // 3–7
+      // Randomly pick 3–7 approvers
+      const approverCount = Math.floor(Math.random() * 5) + 3; // range 3–7
       let approvers = randomSubset(USER_IDS, approverCount);
 
-      // Always include the creator
+      // Always include the report's creator
       if (!approvers.some(id => id.equals(report.userId))) {
         approvers.push(report.userId);
       }
 
-      // Remove duplicates just in case
+      // Remove duplicates
       approvers = [...new Set(approvers.map(id => id.toString()))].map(id => new mongoose.Types.ObjectId(id));
 
-      report.status = "accepted";
+      // Update report with new approvers
       report.approvedBy = approvers;
 
-      await report.save();
+      // Check if supports (unique approvers) >= 5
+      if (approvers.length >= 5) {
+        report.status = "accepted";
 
-      // Optionally, insert into HazardsVerified
-      await HazardsVerified.create(report.toObject());
+        // Save updated report
+        await report.save();
+
+        // Add to HazardsVerified
+        await HazardsVerified.findOneAndUpdate(
+          { _id: report._id },
+          report.toObject(),
+          { upsert: true } // create if not exists
+        );
+
+        convertedCount++;
+      } else {
+        // Less than 5 supports → still pending
+        report.status = "pending";
+        await report.save();
+      }
     }
 
-    console.log(`✅ ${selectedReports.length} reports marked as accepted and moved to HazardsVerified`);
+    console.log(`✅ ${convertedCount} reports reached 5+ supports and were moved to HazardsVerified.`);
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("❌ Error during simulation:", err);
   } finally {
     await mongoose.disconnect();
-    console.log("🔌 Disconnected");
+    console.log("🔌 Disconnected from MongoDB");
   }
 };
 
