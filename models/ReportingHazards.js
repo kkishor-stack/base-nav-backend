@@ -27,12 +27,6 @@ const ReportSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 ReportSchema.index({ location: "2dsphere" });
-
-// ✅ Declare models
-const Report = mongoose.models.Report || mongoose.model("Report", ReportSchema);
-const HazardsVerified = mongoose.models.HazardsVerified || mongoose.model("HazardsVerified", ReportSchema);
-
-// ✅ Middleware: Auto-verify when 5+ supports reached
 ReportSchema.post("save", async function (doc) {
   try {
     // Skip if already accepted
@@ -42,11 +36,14 @@ ReportSchema.post("save", async function (doc) {
     if (doc.approvedBy && doc.approvedBy.length >= 5) {
       console.log(`⚡ Report ${doc._id} reached ${doc.approvedBy.length} supports → verifying...`);
 
-      // Update report status to accepted
+      // Update report status to accepted (use model by name)
       await mongoose.model("Report").findByIdAndUpdate(doc._id, { status: "accepted" });
 
+      // At runtime, get the HazardsVerified model (will be compiled below)
+      const HazardsVerifiedModel = mongoose.models.HazardsVerified || mongoose.model("HazardsVerified");
+
       // Clone into HazardsVerified (upsert to avoid duplicates)
-      await HazardsVerified.findOneAndUpdate(
+      await HazardsVerifiedModel.findOneAndUpdate(
         { _id: doc._id },
         doc.toObject(),
         { upsert: true, new: true }
@@ -59,4 +56,9 @@ ReportSchema.post("save", async function (doc) {
   }
 });
 
-export { Report, HazardsVerified };
+// ✅ Declare models (compile after middleware so the hook runs at save-time)
+const Report = mongoose.models.Report || mongoose.model("Report", ReportSchema);
+const HazardsVerified = mongoose.models.HazardsVerified || mongoose.model("HazardsVerified", ReportSchema);
+
+export { HazardsVerified, Report };
+
