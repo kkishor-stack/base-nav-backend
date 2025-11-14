@@ -151,6 +151,15 @@ export default async function handler(req, res) {
 
     await doc.save();
 
+    // Check if report just reached 5+ supports and was promoted
+    let wasPromoted = false;
+    if (source === "report" && doc.approvedBy && doc.approvedBy.length >= 5) {
+      // Verify middleware executed (check if also in HazardsVerified now)
+      const { HazardsVerified } = await import("../models/ReportingHazards.js");
+      const verifiedCopy = await HazardsVerified.findById(id).lean();
+      wasPromoted = !!verifiedCopy;
+    }
+
     // Return the updated document (with counts convenient for client)
     // Pull fresh copy from same collection
     let updatedDoc;
@@ -162,6 +171,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       report: updatedDoc,
+      source: wasPromoted ? "hazard" : source,
+      wasPromoted: wasPromoted,
       counts: {
         support: (updatedDoc.approvedBy || []).length,
         reject: (updatedDoc.disapprovedBy || []).length

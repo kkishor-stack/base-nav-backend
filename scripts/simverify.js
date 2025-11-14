@@ -38,13 +38,13 @@ const simulateVerification = async () => {
     const reports = await Report.find({ status: "pending" });
 
     // Randomly choose about 40% to process
-    const selectedReports = randomSubset(reports, Math.floor(reports.length * 0.4));
+    const selectedReports = randomSubset(reports, Math.floor(reports.length * 0.5));
 
     let convertedCount = 0;
 
     for (const report of selectedReports) {
       // Randomly pick 3–7 approvers
-      const approverCount = Math.floor(Math.random() * 5) + 3; // range 3–7
+      const approverCount = Math.floor(Math.random() * 5) + 2; // range 3–7
       let approvers = randomSubset(USER_IDS, approverCount);
 
       // Always include the report's creator
