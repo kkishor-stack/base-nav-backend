@@ -132,19 +132,29 @@ export default async function handler(req, res) {
     // Check if user already voted (support or reject)
     const alreadySupported = doc.approvedBy.map(String).includes(String(userId));
     const alreadyRejected = doc.disapprovedBy.map(String).includes(String(userId));
-    if (alreadySupported && action === "support") {
-      return res.status(409).json({ error: "You have already supported this report." });
-    }
-    if (alreadyRejected && action === "reject") {
-      return res.status(409).json({ error: "You have already rejected this report." });
-    }
 
+    // Toggle behavior:
+    // - If user clicks 'support' again and they already supported => remove their support (undo)
+    // - If user clicks 'reject' again and they already rejected => remove their reject (undo)
+    // - If user switches (support -> reject or reject -> support) update accordingly
     if (action === "support") {
-      if (!alreadySupported) doc.approvedBy.push(userId);
-      doc.disapprovedBy = doc.disapprovedBy.filter(u => String(u) !== String(userId));
+      if (alreadySupported) {
+        // undo support
+        doc.approvedBy = doc.approvedBy.filter(u => String(u) !== String(userId));
+      } else {
+        // add support and remove any reject
+        doc.approvedBy.push(userId);
+        doc.disapprovedBy = doc.disapprovedBy.filter(u => String(u) !== String(userId));
+      }
     } else if (action === "reject") {
-      if (!alreadyRejected) doc.disapprovedBy.push(userId);
-      doc.approvedBy = doc.approvedBy.filter(u => String(u) !== String(userId));
+      if (alreadyRejected) {
+        // undo reject
+        doc.disapprovedBy = doc.disapprovedBy.filter(u => String(u) !== String(userId));
+      } else {
+        // add reject and remove any support
+        doc.disapprovedBy.push(userId);
+        doc.approvedBy = doc.approvedBy.filter(u => String(u) !== String(userId));
+      }
     } else {
       return res.status(400).json({ error: "Invalid action" });
     }
