@@ -29,10 +29,7 @@ const ReportSchema = new mongoose.Schema({
 ReportSchema.index({ location: "2dsphere" });
 ReportSchema.post("save", async function (doc) {
   try {
-    // Skip if already accepted
-    if (doc.status === "accepted") return;
-
-    // Proceed only if supports are 5 or more
+    // If supports are 5 or more, ensure an entry exists in HazardsVerified
     if (doc.approvedBy && doc.approvedBy.length >= 5) {
       console.log(`⚡ Report ${doc._id} reached ${doc.approvedBy.length} supports → verifying...`);
 
@@ -50,6 +47,21 @@ ReportSchema.post("save", async function (doc) {
       );
 
       console.log(`✅ Report ${doc._id} added to HazardsVerified.`);
+    } else {
+      // If supports drop below 5, remove any existing copy from HazardsVerified
+      try {
+        const HazardsVerifiedModel = mongoose.models.HazardsVerified || mongoose.model("HazardsVerified");
+        const existing = await HazardsVerifiedModel.findById(doc._id);
+        if (existing) {
+          await HazardsVerifiedModel.findByIdAndDelete(doc._id);
+          console.log(`🗑️ Report ${doc._id} removed from HazardsVerified (supports < 5).`);
+          // Also ensure original report status reflects pending if needed
+          await mongoose.model("Report").findByIdAndUpdate(doc._id, { status: "pending" });
+        }
+      } catch (e) {
+        // Not fatal — log and continue
+        console.error("Error while removing from HazardsVerified:", e);
+      }
     }
   } catch (err) {
     console.error("❌ Error in report verification middleware:", err);
